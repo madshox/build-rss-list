@@ -19,13 +19,16 @@ class MainController extends Controller
 
     public function index()
     {
+
+        // get cats
+
         $site = 'https://daryo.uz';
         $response = Http::get($site);
         $this->dom->loadHTML($response);
         $array = [];
-        $as = $this->dom->querySelectorAll('ul li a');
-        for ($i = 0; $i < count($as); $i++) {
-            $url = $as[$i]->getAttribute('href');
+        $cat_links = $this->dom->getElementsByTagName('a');
+        foreach ($cat_links as $cat_link) {
+            $url = $cat_link->getAttribute('href');
             if ($url && !in_array($url, $array) && str_contains($url, 'category') && !str_contains($url, 'reklama')) {
                 $array[] = $url;
             }
@@ -33,48 +36,42 @@ class MainController extends Controller
 
         sleep(1);
 
+        //get posts_links in cats
+
         $array_posts = [];
         foreach ($array as $cat) {
             $respon = Http::get($site . $cat);
             if ($respon->ok()) {
                 $this->dom->loadHTML($respon);
-                $itemD = $this->dom->querySelectorAll('.itemDatas .itemData');
-                for ($k = 0; $k < count($itemD); $k++) {
-                    $data = $itemD[$k]->querySelector('span')->innerHTML;
-                    if($data && !in_array($data, $array_posts) && str_contains($data, 'Bugun')) {
-                        $array_posts[] = $data;
+                $post_links = $this->dom->getElementsByTagName('a');
+                foreach ($post_links as $post_link) {
+                    $url = $post_link->getAttribute('href');
+                    if ($url && !in_array($url, $array_posts) && str_contains($url, date('Y/m/d'))) {
+                        $array_posts[] = $url;
                     }
                 }
-//                $as = $this->dom->querySelectorAll('.items .itemTitle a');
-//                for ($j = 0; $j < count($as); $j++) {
-//                    $url = $as[$j]->getAttribute('href');
-//                    if ($url && !in_array($url, $array_posts)) {
-//                        $array_posts[] = $url;
-//                    }
-//                }
             }
             sleep(0.5);
         }
-//
-//        sleep(1);
-//
-//        $array_post = [];
-//        foreach ($array_posts as $post) {
-//            $res = Http::get($site . $post);
-//            if($res->ok()) {
-//                $this->dom->loadHTML($res);
-//                $title = $this->dom->querySelector('h1')->innerHTML;
-//                if ($title && !in_array($title, $array_post)) {
-//                    $array_post[] = $title;
-//                }
-//            }
-//            sleep(0.5);
-//        }
+
+        sleep(1);
+
+        //get title, description, img for posts
+        $array_post_data = [];
+        foreach ($array_posts as $post) {
+            $res = Http::get($site . $post);
+            if($res->ok()) {
+                $this->dom->loadHTML($res, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
+                $description = $this->dom->querySelector('.articleCont .postContent')->innerHTML;
+                if ($description && !in_array($description, $array_post_data)) {
+                    $array_post_data[] = $description;
+                }
+            }
+            sleep(0.5);
+        }
 
 
-        return $array_posts;
+        return $array_post_data;
 
-
-//        dd($crawler_data);
     }
 }
