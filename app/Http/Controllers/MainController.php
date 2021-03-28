@@ -2,8 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use Goutte\Client;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use IvoPetkov\HTML5DOMDocument;
 
@@ -58,13 +56,19 @@ class MainController extends Controller
 
         //get title, description, img for posts
         $array_post_data = [];
-        foreach ($array_posts as $post) {
+        foreach ($array_posts as $key => $post) {
             $res = Http::get($site . $post);
             if($res->ok()) {
                 $this->dom->loadHTML($res, HTML5DOMDocument::ALLOW_DUPLICATE_IDS);
-                $description = $this->dom->querySelector('.articleCont .postContent')->innerHTML;
-                if ($description && !in_array($description, $array_post_data)) {
-                    $array_post_data[] = $description;
+                $item = [
+                    'title' =>  $this->dom->querySelector('.articleCont .title-1')->innerHTML,
+                    'description' => $this->dom->querySelector('.articleCont .postContent')->innerHTML,
+                    'image' => $this->dom->querySelector('.articleCont img')->getAttribute('src')
+                    ];
+
+                if ($item && !in_array($item, $array_post_data) && !str_contains($item['description'], 'Reklama')) {
+
+                    array_push($array_post_data, $item);
                 }
             }
             sleep(0.5);
